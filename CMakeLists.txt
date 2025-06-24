@@ -1,0 +1,42 @@
+# Template CMakeLists.txt for a controller package
+cmake_minimum_required(VERSION 3.10)
+project(whole_body_roller)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Find Pinocchio using pkg-config
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(PINOCCHIO REQUIRED pinocchio)
+
+# add eigen as a dependency
+find_package(Eigen3 REQUIRED)
+
+
+# Include directories and link libraries
+include_directories(${PINOCCHIO_INCLUDE_DIRS})
+link_directories(${PINOCCHIO_LIBRARY_DIRS})
+add_definitions(${PINOCCHIO_CFLAGS_OTHER})
+
+
+add_library(quadprogpp STATIC
+    QuadProgpp/src/Array.cc
+    QuadProgpp/src/QuadProg++.cc)
+target_include_directories(quadprogpp PUBLIC
+    QuadProgpp/src)
+
+
+# Source files
+file(GLOB SRC_FILES src/*.cpp)
+
+# Dependencies
+set(DEPENDENCIES
+    pthread
+    glfw
+    yaml-cpp
+)
+
+# Executable target
+add_executable(whole_body_roller ${SRC_FILES} src/main.cpp)
+target_link_libraries(whole_body_roller ${DEPENDENCIES})
+target_link_libraries(whole_body_roller ${PINOCCHIO_LIBRARIES})
