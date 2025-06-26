@@ -18,6 +18,7 @@ include_directories(${PINOCCHIO_INCLUDE_DIRS})
 link_directories(${PINOCCHIO_LIBRARY_DIRS})
 add_definitions(${PINOCCHIO_CFLAGS_OTHER})
 
+include_directories(include)
 
 add_library(quadprogpp STATIC
     QuadProgpp/src/Array.cc
