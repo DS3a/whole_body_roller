@@ -13,7 +13,7 @@ int main(int argc, const char **argv) {
               << "\nwith each lambda of: " << (*cdv->lambda_c)[0].size()
                << std::endl;
 
-    whole_body_roller::Constraint c(cdv, 2);
+    whole_body_roller::Constraint c(cdv, 2, whole_body_roller::constraint_type_t::INEQUALITY);
     c.set_qdd_constraints(Eigen::MatrixXd::Ones(2, 7)); 
 
     std::cout << c.get_constraint_matrix() << std::endl;
