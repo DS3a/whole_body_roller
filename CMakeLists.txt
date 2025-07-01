@@ -28,8 +28,12 @@ target_include_directories(quadprogpp PUBLIC
 
 
 # Source files
-file(GLOB SRC_FILES src/*.cpp)
+# file(GLOB SRC_FILES src/*.cpp)
 
+add_library(whole_body_roller
+    src/control_decision_variables.cpp
+    src/constraint.cpp
+)
 # Dependencies
 set(DEPENDENCIES
     pthread
@@ -38,6 +42,11 @@ set(DEPENDENCIES
 )
 
 # Executable target
-add_executable(whole_body_roller ${SRC_FILES} src/main.cpp)
-target_link_libraries(whole_body_roller ${DEPENDENCIES})
-target_link_libraries(whole_body_roller ${PINOCCHIO_LIBRARIES})
+add_executable(whole_body_roller_test src/test.cpp)
+target_link_libraries(whole_body_roller_test whole_body_roller)
+target_include_directories(whole_body_roller PUBLIC
+    include
+    ${DEPENDENCIES}
+    ${PINOCCHIO_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS})
+
