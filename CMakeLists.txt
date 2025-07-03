@@ -33,6 +33,7 @@ target_include_directories(quadprogpp PUBLIC
 add_library(whole_body_roller
     src/control_decision_variables.cpp
     src/constraint.cpp
+    src/dynamics.cpp
 )
 # Dependencies
 set(DEPENDENCIES

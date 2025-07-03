@@ -4,3 +4,43 @@
     This also contains the model data from the urdf/mjcf, 
     and can be used for inverse dynamics control, contact constraints, etc.,
  */
+
+#pragma once
+#include <memory>
+#include <map>
+
+
+#include "pinocchio/algorithm/model.hpp"
+#include "pinocchio/algorithm/joint-configuration.hpp"
+#include "pinocchio/algorithm/kinematics.hpp"
+
+
+#include "control_decision_variables.hpp"
+#include "constraint.hpp"
+#include "end_effector.hpp"
+
+namespace whole_body_roller {
+    class Dynamics {
+    public:
+        std::shared_ptr<whole_body_roller::ControlDecisionVariables> dec_v;
+        std::shared_ptr<pinocchio::Model> model_;
+        std::shared_ptr<pinocchio::Data> data_;
+        bool is_dynamics_ready;
+        int added_end_effectors;
+        int free_end_effectors;
+        int num_end_effectors_;
+        std::map <std::string, int> end_effector_map_;
+        std::vector<whole_body_roller::EndEffector> end_effectors;
+
+        std::shared_ptr<whole_body_roller::Constraint> dynamics_constraint;
+
+    public:
+        Dynamics(int num_end_effectors, std::shared_ptr<pinocchio::Model> model);
+        bool add_end_effector(std::string frame_name);
+        bool change_end_effector_state(std::string frame_name, end_effector_state_t new_state);
+        bool update_joint_states(const Eigen::VectorXd &joint_positions, const Eigen::VectorXd &joint_velocities);
+        
+        bool update_dynamics_constraint();
+
+    };
+}

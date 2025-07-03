@@ -52,6 +52,26 @@ namespace whole_body_roller {
         return false;
     }
 
+
+    bool Constraint::is_constraint_valid() {
+        if (
+            this->dec_v->nv_ > 6 && // at least 6 variables for floating base
+            this->dec_v->nc_ >= 0 && // at least 0 contact points
+            this->num_constraints_ > 0 && // at least one constraint
+            this->qdd_constraints.rows() == this->num_constraints_ &&
+            this->qdd_constraints.cols() == this->dec_v->nv_ &&
+            this->tau_constraints.rows() == this->num_constraints_ &&
+            this->tau_constraints.cols() == this->dec_v->nv_-6 &&
+            this->contact_constraints.size() == this->dec_v->nc_ &&
+            std::all_of(this->contact_constraints.begin(), this->contact_constraints.end(), 
+                        [this](const Eigen::MatrixXd& m) { return m.rows() == this->num_constraints_ && m.cols() == 6; })
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
     Eigen::MatrixXd Constraint::get_constraint_matrix() {
         Eigen::MatrixXd constraint_matrix(this->num_constraints_, 2*(this->dec_v->nv_)-6+6*(this->dec_v->nc_));
         Eigen::MatrixXd ct_constraints(this->num_constraints_, 6*(this->dec_v->nc_));

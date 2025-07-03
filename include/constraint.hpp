@@ -95,6 +95,11 @@ namespace whole_body_roller {
         // TODO-DONE create an enum to declare whether it is an equality or an inequality constraint
 
 
+        // this function basically checks the dimensions of all
+        // the decision variable matrices and the bias vector
+        // and makes sure it matches whatever is there in dec_v and num_constraints
+        bool is_constraint_valid();
+
         Eigen::MatrixXd get_constraint_matrix();
         // {
         //     Eigen::MatrixXd constraint_matrix(this->num_constraints_, 2*(this->dec_v->nv_)-6+6*(this->dec_v->nc_));
