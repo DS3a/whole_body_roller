@@ -32,14 +32,21 @@ namespace whole_body_roller {
         std::map <std::string, int> end_effector_map_;
         std::vector<whole_body_roller::EndEffector> end_effectors;
 
+
+        Eigen::VectorXd joint_positions_;
+        Eigen::VectorXd joint_velocities_;
         std::shared_ptr<whole_body_roller::Constraint> dynamics_constraint;
 
     public:
         Dynamics(int num_end_effectors, std::shared_ptr<pinocchio::Model> model);
         bool add_end_effector(std::string frame_name);
         bool change_end_effector_state(std::string frame_name, end_effector_state_t new_state);
+        bool change_end_effector_function(std::string frame_name, end_effector_function_t new_function);
         bool update_joint_states(const Eigen::VectorXd &joint_positions, const Eigen::VectorXd &joint_velocities);
-        
+
+
+        // check the end effectors that are in contact and update nc_ in dec_v
+        // then update the dynamics constraint with new M for dec_v.qdd and new contact jacobians for each contact in the constraint 
         bool update_dynamics_constraint();
 
     };
