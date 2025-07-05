@@ -32,12 +32,16 @@ namespace whole_body_roller {
         int added_end_effectors;
         int free_end_effectors;
         int num_end_effectors_;
+
+        //stores the end effectors, with name, state and function
         std::map <std::string, int> end_effector_map_;
         std::vector<whole_body_roller::EndEffector> end_effectors;
 
 
         Eigen::VectorXd joint_positions_;
         Eigen::VectorXd joint_velocities_;
+
+        //represents the dynamic equation (M * qdd + b = ..:)
         std::shared_ptr<whole_body_roller::Constraint> dynamics_constraint;
 
     public:

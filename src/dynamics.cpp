@@ -7,6 +7,7 @@ namespace whole_body_roller {
         this->data_ = std::make_shared<pinocchio::Data>(*this->model_);
 
         this->dynamics_constraint = std::make_shared<whole_body_roller::Constraint>(
+            //Problem: dec_v is not declared/initialized
             this->dec_v,
             this->model_->nv, // number of variables in the second derivative of the joint positions (incl. floating base)
             whole_body_roller::constraint_type_t::EQUALITY // the dynamics constraint is an equality constraint

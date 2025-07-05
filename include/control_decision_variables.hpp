@@ -3,6 +3,7 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Core>
 #include <memory>
+#include <vector>
 
 namespace whole_body_roller {
     class ControlDecisionVariables {

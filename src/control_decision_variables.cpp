@@ -1,5 +1,6 @@
 #include "control_decision_variables.hpp"
 
+
 namespace whole_body_roller {
     ControlDecisionVariables::ControlDecisionVariables(int nv, int nc) {
         this->nv_ = nv;
