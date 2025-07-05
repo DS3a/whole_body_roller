@@ -74,10 +74,63 @@ namespace whole_body_roller {
 
         return false;
     }
-    
-    // bool Dynamics::update_joint_states(const Eigen::VectorXd &joint_positions, const Eigen::VectorXd &joint_velocities);
+
+    bool Dynamics::update_joint_states(const Eigen::VectorXd &joint_positions, const Eigen::VectorXd &joint_velocities) {
+        if (joint_positions.size() != this->model_->nq || joint_velocities.size() != this->model_->nv) {
+            return false; // size mismatch
+        }
+
+        this->joint_positions_ = joint_positions;
+        this->joint_velocities_ = joint_velocities;
+
+        // Update the kinematics for the model
+        // pinocchio::forwardKinematics(*this->model_, *this->data_, this->joint_positions_, this->joint_velocities_);
         
-    // bool Dynamics::update_dynamics_constraint();
+        // Update the dynamics constraint with the new joint states
+        // this->dynamics_constraint->update_dynamics_constraint(this->joint_positions_, this->joint_velocities_);
+
+        return true;
+    }
+        
+    bool Dynamics::update_dynamics_constraint() {
+        if (!this->is_dynamics_ready) {
+            return false; // dynamics not ready
+        }
+
+        std::vector<Eigen::MatrixXd> contact_jacobians;
+
+        bool update_success = true;
+
+        pinocchio::forwardKinematics(*this->model_, *this->data_, this->joint_positions_, this->joint_velocities_);
+        // Update the number of contact points in the decision variables
+        this->dec_v->nc_ = 0;
+        for (const auto& ee : this->end_effectors) {
+            if (ee.state == whole_body_roller::end_effector_state_t::IN_CONTACT) {
+                this->dec_v->nc_++;
+                contact_jacobians.push_back(
+                    // TODO need to figure out which frame to use for the contact jacobian
+                    pinocchio::getFrameJacobian(*this->model_, 
+                                                *this->data_, 
+                                                this->model_->getFrameId(ee.frame), 
+                                                pinocchio::LOCAL_WORLD_ALIGNED)
+                );
+            }
+        }
+        update_success &= this->dynamics_constraint->set_contact_constraints(contact_jacobians);
+
+        // TODO need to figure out which convention to use see: https://gepettoweb.laas.fr/doc/stack-of-tasks/pinocchio/master/doxygen-html/namespacepinocchio.html#ab48efbd527d1bc9941da1a5f400e751a
+
+        pinocchio::crba(*this->model_, *this->data_, this->joint_positions_);
+        update_success &= this->dynamics_constraint->set_qdd_constraints(this->data_->M);
+        pinocchio::rnea(*this->model_, 
+                        *this->data_, 
+                        this->joint_positions_, 
+                        this->joint_velocities_, 
+                        Eigen::VectorXd::Zero(this->model_->nv));
+        update_success &= this->dynamics_constraint->set_constraint_bias(this->data_->tau);
+        
+        return update_success;
+    }
 
  
 }
