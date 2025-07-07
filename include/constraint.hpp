@@ -14,7 +14,8 @@ namespace whole_body_roller {
 
     class Constraint {
     public:
-        std::shared_ptr<whole_body_roller::ControlDecisionVariables> dec_v;
+        // the decision variables should be read only
+        std::shared_ptr<whole_body_roller::ControlDecisionVariables const> dec_v;
         int num_constraints_;
         
         // Need one matrix of size (num_constraints, nv)
@@ -64,7 +65,7 @@ namespace whole_body_roller {
         //         this->tau_constraints = constraints;
         //         return true;
         //     }
-        //     return false;
+        //     return falselocation;
         // }
 
         // TODO create a function to set the contact constraints
