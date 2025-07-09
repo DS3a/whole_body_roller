@@ -20,7 +20,7 @@ namespace whole_body_roller {
         std::shared_ptr<whole_body_roller::Dynamics> dynamics;
 
         std::shared_ptr<Eigen::VectorXd> joint_torques;
-        // the constraints should be read only
+
         std::vector<std::shared_ptr<whole_body_roller::Constraint>> constraints;
 
     public:
@@ -30,6 +30,8 @@ namespace whole_body_roller {
         bool add_constraint(std::shared_ptr<whole_body_roller::Constraint> constraint);
 
         bool solve_qp();
+
+        bool step();
 
     };
 }
