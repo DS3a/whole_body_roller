@@ -19,8 +19,10 @@ namespace whole_body_roller {
         selection_matrix << selection_matrix_floating_base, 
                             selection_matrix_joints;
         this->dynamics_constraint->set_tau_constraints(
-            selection_matrix
+            (-1)*(selection_matrix)
         );
+        // M(q)qdd - S tau - J_c lambda_c = -h(q, qd)
+        // that is why the selection matrix is multiplied by -1
 
         // all end effectors need to be added
         this->added_end_effectors = 0;
@@ -102,23 +104,32 @@ namespace whole_body_roller {
         bool update_success = true;
 
         pinocchio::forwardKinematics(*this->model_, *this->data_, this->joint_positions_, this->joint_velocities_);
+        pinocchio::computeJointJacobians(*this->model_, *this->data_, this->joint_positions_);
         // Update the number of contact points in the decision variables
         this->dec_v->nc_ = 0;
         for (const auto& ee : this->end_effectors) {
             if (ee.state == whole_body_roller::end_effector_state_t::IN_CONTACT) {
                 this->dec_v->nc_++;
                 contact_jacobians.push_back(
-                    // TODO need to figure out which frame to use for the contact jacobian
-                    pinocchio::getFrameJacobian(*this->model_, 
+                    // We use LOCAL_WORLD_ALIGNED to get the jacobian in the world frame
+                    // it basically gives us the jacobian of the end effector in the world frame
+                    // if we were to think abou tit in terms of the acceleration or velocity,
+                    //      it gives us the velocity of the frame we want to 
+                    //      consider with respect to the world frame
+                    (-1) * (pinocchio::getFrameJacobian(*this->model_, 
                                                 *this->data_, 
                                                 this->model_->getFrameId(ee.frame), 
-                                                pinocchio::LOCAL_WORLD_ALIGNED)
+                                                pinocchio::LOCAL_WORLD_ALIGNED).transpose())
                 );
+                // M(q)qdd - S tau - J_c lambda_c = -h(q, qd)
+                // that is why the jacobian is multiplied by -1
             }
         }
         update_success &= this->dynamics_constraint->set_contact_constraints(contact_jacobians);
 
-        // TODO need to figure out which convention to use see: https://gepettoweb.laas.fr/doc/stack-of-tasks/pinocchio/master/doxygen-html/namespacepinocchio.html#ab48efbd527d1bc9941da1a5f400e751a
+        // need to figure out which convention to use see: https://gepettoweb.laas.fr/doc/stack-of-tasks/pinocchio/master/doxygen-html/namespacepinocchio.html#ab48efbd527d1bc9941da1a5f400e751a
+        // this is to be left to the default, which is Convention::LOCAL
+        // why? see https://chatgpt.com/share/686f2db8-4f7c-800e-86e3-665b6a965391
 
         pinocchio::crba(*this->model_, *this->data_, this->joint_positions_);
         update_success &= this->dynamics_constraint->set_qdd_constraints(this->data_->M);
@@ -127,7 +138,9 @@ namespace whole_body_roller {
                         this->joint_positions_, 
                         this->joint_velocities_, 
                         Eigen::VectorXd::Zero(this->model_->nv));
-        update_success &= this->dynamics_constraint->set_constraint_bias(this->data_->tau);
+        update_success &= this->dynamics_constraint->set_constraint_bias((-1)*(this->data_->tau)); // -h(q, qd)
+        // we set the acceleration of rnea to 0 to avoid it computing the inverse dynamics of the Mass matrix
+        // that is being done separately using crba as it needs to be fed into a different constraint
         
         return update_success;
     }

@@ -50,6 +50,8 @@ namespace whole_body_roller {
 
         // check the end effectors that are in contact and update nc_ in dec_v
         // then update the dynamics constraint with new M for dec_v.qdd and new contact jacobians for each contact in the constraint 
+        // the order of contact jacobians is the same as the order that the end effectors have been added in
+        //          the end effectors which are not in contact aren't considered to save computation time
         bool update_dynamics_constraint();
 
     };
