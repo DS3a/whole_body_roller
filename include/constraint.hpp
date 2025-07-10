@@ -24,6 +24,8 @@ namespace whole_body_roller {
         // One matrix of size (num_constraints, nv-5)
         Eigen::MatrixXd tau_constraints;
 
+
+        void ignore_contact_constraints();
         // One vector(list) of size nc with matrices of size (num_constraints, 6)
         std::vector<Eigen::MatrixXd> contact_constraints;
 

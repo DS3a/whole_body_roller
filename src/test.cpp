@@ -1,5 +1,6 @@
 #include "constraint.hpp"
 #include "control_decision_variables.hpp"
+#include "task_space_constraints/frame_acceleration.hpp"
 
 
 #include <iostream>
