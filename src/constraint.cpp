@@ -32,11 +32,12 @@ namespace whole_body_roller {
         return false;
     }
 
-    void Constraint::ignore_contact_constraints() {
+    void Constraint::ignore_contact_constraints(bool ignore_contacts=true) {
+        this->contacts_are_considered = !ignore_contacts;
         // This function is to ignore the contact constraints, 
         // which means that the contact constraints will not be considered in the constraint matrix
         // This is useful for testing purposes or when we don't want to consider contact constraints
-        this->contact_constraints = std::vector<Eigen::MatrixXd>(this->dec_v->nc_, Eigen::MatrixXd::Zero(this->num_constraints_, 6));
+        // this->contact_constraints = std::vector<Eigen::MatrixXd>(this->dec_v->nc_, Eigen::MatrixXd::Zero(this->num_constraints_, 6));
     }
 
     bool Constraint::set_contact_constraints(std::vector<Eigen::MatrixXd> constraints) {
@@ -69,11 +70,18 @@ namespace whole_body_roller {
             this->qdd_constraints.rows() == this->num_constraints_ &&
             this->qdd_constraints.cols() == this->dec_v->nv_ &&
             this->tau_constraints.rows() == this->num_constraints_ &&
-            this->tau_constraints.cols() == this->dec_v->nv_-6 &&
-            this->contact_constraints.size() == this->dec_v->nc_ &&
-            std::all_of(this->contact_constraints.begin(), this->contact_constraints.end(), 
-                        [this](const Eigen::MatrixXd& m) { return m.rows() == this->num_constraints_ && m.cols() == 6; })
+            this->tau_constraints.cols() == this->dec_v->nv_-6
         ) {
+            // check contact constraints
+            if (this->contacts_are_considered && 
+                this->contact_constraints.size() == this->dec_v->nc_ &&
+                std::all_of(this->contact_constraints.begin(), this->contact_constraints.end(), 
+                    [this](const Eigen::MatrixXd& m) { return m.rows() == this->num_constraints_ && m.cols() == 6; })
+                ) {
+                    return true;
+                } else {
+                    return false;
+                }
             return true;
         }
 
@@ -82,16 +90,23 @@ namespace whole_body_roller {
 
     Eigen::MatrixXd Constraint::get_constraint_matrix() {
         Eigen::MatrixXd constraint_matrix(this->num_constraints_, 2*(this->dec_v->nv_)-6+6*(this->dec_v->nc_));
+        
         Eigen::MatrixXd ct_constraints(this->num_constraints_, 6*(this->dec_v->nc_));
-        int current_col = 0;
-        for (const auto& m : this->contact_constraints) {
-                // this is to test whether the concatenation is fine
-                // ct_constraints.block(0, currentCol, m.rows(), m.cols()) = m*(currentCol/12.0+1);
-            ct_constraints.block(0, current_col, m.rows(), m.cols()) = m;
-            current_col += m.cols();
+        if (this->contacts_are_considered) {
+            int current_col = 0;
+            for (const auto& m : this->contact_constraints) {
+                    // this is to test whether the concatenation is fine
+                    // ct_constraints.block(0, currentCol, m.rows(), m.cols()) = m*(currentCol/12.0+1);
+                ct_constraints.block(0, current_col, m.rows(), m.cols()) = m;
+                current_col += m.cols();
+            }
+        } else {
+            ct_constraints = Eigen::MatrixXd::Zero(this->num_constraints_, 6*(this->dec_v->nc_));
+            // if the contacts are not considered, then the contact constraints are all zeros
+            // this is to save computation time
         }
         constraint_matrix << this->qdd_constraints, this->tau_constraints, ct_constraints;
 
         return constraint_matrix;
     }
-}
+} 

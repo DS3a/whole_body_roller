@@ -8,8 +8,9 @@
 #pragma once
 
 #include <memory>
+#include "constraint.hpp"
 
-
+#include "dynamics.hpp"
 
 namespace whole_body_roller {
 
@@ -22,6 +23,7 @@ namespace whole_body_roller {
         std::shared_ptr<Eigen::VectorXd> joint_torques;
 
         std::vector<std::shared_ptr<whole_body_roller::Constraint>> constraints;
+        std::vector<std::shared_ptr<whole_body_roller::ConstraintHandler>> constraint_handlers;
 
     public:
         // this function is just to construct the roller object
@@ -35,7 +37,7 @@ namespace whole_body_roller {
         // this function is to add constraints to the controller.
         // The constraints could be on the contact forces, torques, 
         // or the joint accelerations (or the task space by using the jacobian to transform \ddot{q})
-        bool add_constraint(std::shared_ptr<whole_body_roller::Constraint> constraint);
+        bool add_constraint(std::shared_ptr<whole_body_roller::Constraint> constraint, std::shared_ptr<whole_body_roller::ConstraintHandler> constraint_handler);
 
         // this function consolidates all the constraints, makes sure they're all valid
         //          adds equality and ineq constraints, to the qp and then solves them

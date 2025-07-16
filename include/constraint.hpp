@@ -12,6 +12,16 @@ namespace whole_body_roller {
         INEQUALITY
     };
 
+    // this is a class for non-static constraints, e.g., dynamics, and 
+    // frame acceleration constraints. I want to update all the constraints before adding them to the qp
+    class ConstraintHandler {
+    public:
+        virtual bool update_constraint() = 0; // this function basically updates the non-static constraints with new values
+        // it also ensures that the constraint will pass `is_constraint_valid()` check for anything where the `contacts_are_considered`
+        virtual ~ConstraintHandler() = default;
+
+    };
+
     class Constraint {
     public:
         // the decision variables should be read only
@@ -28,6 +38,8 @@ namespace whole_body_roller {
         void ignore_contact_constraints();
         // One vector(list) of size nc with matrices of size (num_constraints, 6)
         std::vector<Eigen::MatrixXd> contact_constraints;
+
+        bool contacts_are_considered = false; // set to false by default
 
         // Bias vector for the constraints, size (num_constraints, 1)
         Eigen::VectorXd constraint_bias;
@@ -102,6 +114,8 @@ namespace whole_body_roller {
         // the decision variable matrices and the bias vector
         // and makes sure it matches whatever is there in dec_v and num_constraints
         bool is_constraint_valid();
+
+        void ignore_contact_constraints(bool ignore_contacts);
 
         Eigen::MatrixXd get_constraint_matrix();
         // {
