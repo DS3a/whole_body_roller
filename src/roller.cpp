@@ -30,7 +30,7 @@ namespace whole_body_roller {
 
     // this function consolidates all the constraints, makes sure they're all valid
     //          adds equality and ineq constraints, to the qp and then solves them
-    // bool Roller::solve_qp();
+    // bool Roller::solve_qp(); TODO
 
 
     // TODO we need to provide an interface to the constraint handlers

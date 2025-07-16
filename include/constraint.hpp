@@ -72,7 +72,7 @@ namespace whole_body_roller {
         //     return false;
         // }
 
-        // TODO create functions to set constraint matrices for tau, and contacts
+        // DONE create functions to set constraint matrices for tau, and contacts
         bool set_tau_constraints(Eigen::MatrixXd constraints);
         // {
         //     if (constraints.rows() == this->num_constraints_ && constraints.cols() == this->dec_v->nv_-6) {
@@ -82,7 +82,7 @@ namespace whole_body_roller {
         //     return falselocation;
         // }
 
-        // TODO create a function to set the contact constraints
+        // Done create a function to set the contact constraints
         bool set_contact_constraints(std::vector<Eigen::MatrixXd> constraints);
         // {
         //     if (constraints.size() == this->dec_v->nc_) {
@@ -97,7 +97,7 @@ namespace whole_body_roller {
         //     return false;
         // }
         
-        // TODO create a function to set the constraint bias
+        // Done create a function to set the constraint bias
         bool set_constraint_bias(Eigen::VectorXd bias);
         // {
         //     if (bias.size() == this->num_constraints_) {
@@ -107,7 +107,7 @@ namespace whole_body_roller {
         //     return false;
         // }
 
-        // TODO-DONE create an enum to declare whether it is an equality or an inequality constraint
+        // DONE create an enum to declare whether it is an equality or an inequality constraint
 
 
         // this function basically checks the dimensions of all
