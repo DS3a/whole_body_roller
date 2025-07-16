@@ -23,7 +23,7 @@
 #include "end_effector.hpp"
 
 namespace whole_body_roller {
-    class Dynamics {
+    class Dynamics : public whole_body_roller::ConstraintHandler {
     public:
         std::shared_ptr<whole_body_roller::ControlDecisionVariables> dec_v;
         std::shared_ptr<pinocchio::Model> model_;
@@ -53,6 +53,8 @@ namespace whole_body_roller {
         // the order of contact jacobians is the same as the order that the end effectors have been added in
         //          the end effectors which are not in contact aren't considered to save computation time
         bool update_dynamics_constraint();
+
+        bool update_constraint() override;
 
     };
 }

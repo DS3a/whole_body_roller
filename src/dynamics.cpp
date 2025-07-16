@@ -11,7 +11,7 @@ namespace whole_body_roller {
             this->model_->nv, // number of variables in the second derivative of the joint positions (incl. floating base)
             whole_body_roller::constraint_type_t::EQUALITY // the dynamics constraint is an equality constraint
         );
-
+        this->dynamics_constraint->ignore_contact_constraints(false); // ignore contact constraints by default
 
         Eigen::MatrixXd selection_matrix = Eigen::MatrixXd::Zero(this->model_->nv, this->model_->nv - 6);
         Eigen::MatrixXd selection_matrix_floating_base = Eigen::MatrixXd::Zero(6, this->model_->nv - 6);
@@ -145,5 +145,8 @@ namespace whole_body_roller {
         return update_success;
     }
 
+    bool Dynamics::update_constraint() {
+        return this->update_dynamics_constraint();
+    }
  
 }

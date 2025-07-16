@@ -2,7 +2,7 @@
 #include "dynamics.hpp"
 
 namespace whole_body_roller {
-    class FrameAccelerationConstraint {
+    class FrameAccelerationConstraint : public whole_body_roller::ConstraintHandler {
     public:
         std::shared_ptr<whole_body_roller::Dynamics> dynamics;
         std::shared_ptr<whole_body_roller::Constraint> constraint;
@@ -33,10 +33,12 @@ namespace whole_body_roller {
             return true;
         }
 
-        bool update_constraint() {
+        bool update_constraint() override {
             if (!this->dynamics->is_dynamics_ready || !this->dynamics->model_->existFrame(this->frame_name_)) {
                 return false; // dynamics not ready or frame does not exist
             }
+
+            bool update_success = true;
 
             pinocchio::computeJointJacobians(*this->dynamics->model_, 
                                             *this->dynamics->data_, 
@@ -50,7 +52,7 @@ namespace whole_body_roller {
 
 
             // Set the constraints for the acceleration
-            this->constraint->set_qdd_constraints(jacobian.transpose());
+            update_success &= this->constraint->set_qdd_constraints(jacobian.transpose());
             double dt = 1e-8; // Small time step for numerical stability
 
             Eigen::VectorXd q_fut = Eigen::VectorXd::Zero(this->dynamics->model_->nq);
@@ -69,7 +71,7 @@ namespace whole_body_roller {
                                                                    pinocchio::LOCAL_WORLD_ALIGNED);
 
             Eigen::MatrixXd dJ = (jacobian_fut - jacobian) / dt; // Numerical derivative of the Jacobian
-            this->constraint->constraint_bias = this->acceleration_target - dJ * this->dynamics->joint_velocities_; // Bias is the negative of the target acceleration
+            update_success &= this->constraint->set_constraint_bias(this->acceleration_target - dJ * this->dynamics->joint_velocities_); // Bias is the negative of the target acceleration
             
             // the selection matrix is set to all zeros in the constructor,
             // the contact force constraints are undefined. they all need to be zero, 
@@ -78,7 +80,7 @@ namespace whole_body_roller {
             this->constraint->ignore_contact_constraints();
             // this needs to be called everytime as it refreshes the thingi based on the number of contact points
             
-            return true;
+            return update_success;
         } 
     };
 }
