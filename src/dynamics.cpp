@@ -151,6 +151,10 @@ namespace whole_body_roller {
         return update_success;
     }
 
+    std::shared_ptr<whole_body_roller::ControlDecisionVariables> Dynamics::get_dec_v() {
+        return this->dec_v;
+    }
+
     bool Dynamics::update_constraint() {
         return this->update_dynamics_constraint();
     }

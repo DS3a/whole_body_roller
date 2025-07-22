@@ -6,11 +6,11 @@ namespace whole_body_roller {
     // The dynamics constraint is the one that ensures that
     //      the joint accelerations are consistent with the dynamics model.
     // The dynamics object is also the only constraint that is allowed to modify dec_v
-    Roller::Roller(std::shared_ptr<whole_body_roller::ControlDecisionVariables> dv, 
-            std::shared_ptr<whole_body_roller::Dynamics> dyn) {
+    Roller::Roller(std::shared_ptr<whole_body_roller::Dynamics> dyn) {
 
-        this->dec_v = dv;
+        // this->dec_v = dv;
         this->dynamics = dyn;
+        this->dec_v = this->dynamics->get_dec_v();
         this->add_constraint(this->dynamics->dynamics_constraint, this->dynamics);
     }
 

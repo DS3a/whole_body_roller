@@ -54,6 +54,8 @@ namespace whole_body_roller {
         //          the end effectors which are not in contact aren't considered to save computation time
         bool update_dynamics_constraint();
 
+        std::shared_ptr<whole_body_roller::ControlDecisionVariables> get_dec_v();
+
         bool update_constraint() override;
 
     };
