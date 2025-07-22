@@ -11,6 +11,7 @@
 #include "constraint.hpp"
 
 #include "dynamics.hpp"
+#include "QuadProg++.hh"
 
 namespace whole_body_roller {
 
@@ -31,8 +32,7 @@ namespace whole_body_roller {
         // The dynamics constraint is the one that ensures that
         //      the joint accelerations are consistent with the dynamics model.
         // The dynamics object is also the only constraint that is allowed to modify dec_v
-        Roller(std::shared_ptr<whole_body_roller::ControlDecisionVariables> dv, 
-               std::shared_ptr<whole_body_roller::Dynamics> dyn);
+        Roller(std::shared_ptr<whole_body_roller::Dynamics> dyn);
 
         // this function is to add constraints to the controller.
         // The constraints could be on the contact forces, torques, 

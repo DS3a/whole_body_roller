@@ -6,11 +6,11 @@ namespace whole_body_roller {
     // The dynamics constraint is the one that ensures that
     //      the joint accelerations are consistent with the dynamics model.
     // The dynamics object is also the only constraint that is allowed to modify dec_v
-    Roller::Roller(std::shared_ptr<whole_body_roller::ControlDecisionVariables> dv, 
-            std::shared_ptr<whole_body_roller::Dynamics> dyn) {
+    Roller::Roller(std::shared_ptr<whole_body_roller::Dynamics> dyn) {
 
-        this->dec_v = dv;
+        // this->dec_v = dv;
         this->dynamics = dyn;
+        this->dec_v = this->dynamics->get_dec_v();
         this->add_constraint(this->dynamics->dynamics_constraint, this->dynamics);
     }
 
@@ -30,7 +30,60 @@ namespace whole_body_roller {
 
     // this function consolidates all the constraints, makes sure they're all valid
     //          adds equality and ineq constraints, to the qp and then solves them
-    // bool Roller::solve_qp();
+    bool Roller::solve_qp() {
+        int num_eq_constraints = 0;
+        int num_ineq_constraints = 0;
+        for (auto& constraint : this->constraints) {
+            if (!constraint->is_constraint_valid()) {
+                return false; // if any constraint is not valid, we return false
+            }
+            if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::EQUALITY) {
+                num_eq_constraints += constraint->num_constraints_;
+            } else if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::INEQUALITY) {
+                num_ineq_constraints += constraint->num_constraints_;
+            }
+        }
+
+        int nvars = 2 * (this->dec_v->nv_) - 6 + 6 * (this->dec_v->nc_); // number of variables in the qp
+        // Create equality the constraint matrix
+        Eigen::MatrixXd eq_constraint_matrix(nvars, num_eq_constraints);
+        Eigen::VectorXd eq_constraint_bias(num_eq_constraints);
+        Eigen::MatrixXd ineq_constraint_matrix(nvars, num_ineq_constraints);
+        Eigen::VectorXd ineq_constraint_bias(num_ineq_constraints);
+
+        // iterate through all constraints and append the constraint matrices and biases
+        int eq_con_col = 0;
+        int ineq_con_col = 0;
+        for (auto& constraint : this->constraints) {
+            if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::EQUALITY) {
+                // append the equality constraint matrix and bias
+                eq_constraint_matrix.block(0, eq_con_col, nvars, constraint->num_constraints_) = constraint->get_constraint_matrix().transpose();
+                eq_constraint_bias.segment(eq_con_col, constraint->num_constraints_) = constraint->constraint_bias;
+                eq_con_col += constraint->num_constraints_;
+            } else if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::INEQUALITY) {
+                // append the inequality constraint matrix and bias
+                ineq_constraint_matrix.block(0, ineq_con_col, nvars, constraint->num_constraints_) = constraint->get_constraint_matrix().transpose();
+                ineq_constraint_bias.segment(ineq_con_col, constraint->num_constraints_) = constraint->constraint_bias;
+                ineq_con_col += constraint->num_constraints_;
+            }
+        }
+
+        Eigen::MatrixXd G = Eigen::MatrixXd::Identity(nvars, nvars); // G matrix for the qp
+        Eigen::VectorXd g0 = Eigen::VectorXd::Zero(nvars); // g0 vector for the qp
+
+        Eigen::VectorXd x(nvars); // solution vector for the qp
+
+        QuadProgpp::Solver qp_solver;
+        QuadProgpp::Status::Value v = qp_solver.solve(G, g0, eq_constraint_matrix, eq_constraint_bias, 
+                        ineq_constraint_matrix, ineq_constraint_bias, x);
+        
+        if (v == 0) {
+            this->joint_torques = std::make_shared<Eigen::VectorXd>(x.segment(this->dec_v->nv_, this->dec_v->nv_ - 6)); // extract the joint torques from the solution vector
+            return true;
+        }
+
+        return false;
+    }
 
 
     // TODO we need to provide an interface to the constraint handlers

@@ -6,6 +6,12 @@ namespace whole_body_roller {
         this->model_ = model;
         this->data_ = std::make_shared<pinocchio::Data>(*this->model_);
 
+        this->dec_v = std::make_shared<whole_body_roller::ControlDecisionVariables>(
+            this->model_->nv, // number of variables in the second derivative of the joint positions (incl. floating base)
+            0 // number of contact points, will be updated later based on the end effectors in contact
+        );
+
+
         this->dynamics_constraint = std::make_shared<whole_body_roller::Constraint>(
             this->dec_v,
             this->model_->nv, // number of variables in the second derivative of the joint positions (incl. floating base)
@@ -143,6 +149,10 @@ namespace whole_body_roller {
         // that is being done separately using crba as it needs to be fed into a different constraint
         
         return update_success;
+    }
+
+    std::shared_ptr<whole_body_roller::ControlDecisionVariables> Dynamics::get_dec_v() {
+        return this->dec_v;
     }
 
     bool Dynamics::update_constraint() {

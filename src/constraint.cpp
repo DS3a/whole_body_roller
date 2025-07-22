@@ -97,6 +97,7 @@ namespace whole_body_roller {
             for (const auto& m : this->contact_constraints) {
                     // this is to test whether the concatenation is fine
                     // ct_constraints.block(0, currentCol, m.rows(), m.cols()) = m*(currentCol/12.0+1);
+                    // this adds the contact constraints from the vector to ct_constraints
                 ct_constraints.block(0, current_col, m.rows(), m.cols()) = m;
                 current_col += m.cols();
             }
@@ -106,7 +107,7 @@ namespace whole_body_roller {
             // this is to save computation time
         }
         constraint_matrix << this->qdd_constraints, this->tau_constraints, ct_constraints;
-
+        // shape is (num_constraints, 2*(nv)-6+6*nc)
         return constraint_matrix;
     }
 } 
