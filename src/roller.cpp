@@ -30,7 +30,26 @@ namespace whole_body_roller {
 
     // this function consolidates all the constraints, makes sure they're all valid
     //          adds equality and ineq constraints, to the qp and then solves them
-    // bool Roller::solve_qp(); TODO
+    bool Roller::solve_qp() {
+        int num_eq_constraints = 0;
+        int num_ineq_constraints = 0;
+        for (auto& constraint : this->constraints) {
+            if (!constraint->is_constraint_valid()) {
+                return false; // if any constraint is not valid, we return false
+            }
+            if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::EQUALITY) {
+                num_eq_constraints += constraint->num_constraints_;
+            } else if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::INEQUALITY) {
+                num_ineq_constraints += constraint->num_constraints_;
+            }
+        }
+        // Create equality the constraint matrix
+        Eigen::MatrixXd eq_constraint_matrix(num_eq_constraints, 2 * (this->dec_v->nv_) - 6 + 6 * (this->dec_v->nc_));
+        Eigen::VectorXd eq_constraint_bias(num_eq_constraints);
+        Eigen::MatrixXd ineq_constraint_matrix(num_ineq_constraints, 2 * (this->dec_v->nv_) - 6 + 6 * (this->dec_v->nc_));
+        Eigen::VectorXd ineq_constraint_bias(num_ineq_constraints);
+
+    }
 
 
     // TODO we need to provide an interface to the constraint handlers

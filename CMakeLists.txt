@@ -36,6 +36,11 @@ add_library(whole_body_roller
     src/dynamics.cpp
     src/roller.cpp
 )
+
+target_link_libraries(whole_body_roller
+    quadprogpp
+    ${PINOCCHIO_LIBRARIES}
+)
 # Dependencies
 set(DEPENDENCIES
     pthread
@@ -45,7 +50,9 @@ set(DEPENDENCIES
 
 # Executable target
 add_executable(whole_body_roller_test src/test.cpp)
-target_link_libraries(whole_body_roller_test whole_body_roller)
+target_link_libraries(whole_body_roller_test 
+    whole_body_roller 
+    quadprogpp)
 target_include_directories(whole_body_roller PUBLIC
     include
     ${DEPENDENCIES}

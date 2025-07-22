@@ -11,6 +11,7 @@
 #include "constraint.hpp"
 
 #include "dynamics.hpp"
+#include "QuadProg++.hh"
 
 namespace whole_body_roller {
 

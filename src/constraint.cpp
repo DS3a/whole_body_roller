@@ -97,6 +97,7 @@ namespace whole_body_roller {
             for (const auto& m : this->contact_constraints) {
                     // this is to test whether the concatenation is fine
                     // ct_constraints.block(0, currentCol, m.rows(), m.cols()) = m*(currentCol/12.0+1);
+                    // this adds the contact constraints from the vector to ct_constraints
                 ct_constraints.block(0, current_col, m.rows(), m.cols()) = m;
                 current_col += m.cols();
             }
