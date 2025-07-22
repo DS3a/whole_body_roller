@@ -107,7 +107,7 @@ namespace whole_body_roller {
             // this is to save computation time
         }
         constraint_matrix << this->qdd_constraints, this->tau_constraints, ct_constraints;
-
+        // shape is (num_constraints, 2*(nv)-6+6*nc)
         return constraint_matrix;
     }
 } 
