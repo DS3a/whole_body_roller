@@ -6,12 +6,18 @@ namespace whole_body_roller {
         this->model_ = model;
         this->data_ = std::make_shared<pinocchio::Data>(*this->model_);
 
+        this->dec_v = std::make_shared<whole_body_roller::ControlDecisionVariables>(
+            this->model_->nv, // number of variables in the second derivative of the joint positions (incl. floating base)
+            0 // number of contact points, will be updated later based on the end effectors in contact
+        );
+
+
         this->dynamics_constraint = std::make_shared<whole_body_roller::Constraint>(
             this->dec_v,
             this->model_->nv, // number of variables in the second derivative of the joint positions (incl. floating base)
             whole_body_roller::constraint_type_t::EQUALITY // the dynamics constraint is an equality constraint
         );
-
+        this->dynamics_constraint->ignore_contact_constraints(false); // ignore contact constraints by default
 
         Eigen::MatrixXd selection_matrix = Eigen::MatrixXd::Zero(this->model_->nv, this->model_->nv - 6);
         Eigen::MatrixXd selection_matrix_floating_base = Eigen::MatrixXd::Zero(6, this->model_->nv - 6);
@@ -145,5 +151,12 @@ namespace whole_body_roller {
         return update_success;
     }
 
+    std::shared_ptr<whole_body_roller::ControlDecisionVariables> Dynamics::get_dec_v() {
+        return this->dec_v;
+    }
+
+    bool Dynamics::update_constraint() {
+        return this->update_dynamics_constraint();
+    }
  
 }
