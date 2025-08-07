@@ -40,27 +40,42 @@ public:
           filtered_vel_{0.0f, 0.0f, 0.0f},
           last_time_(-1.0),
           acc_alpha_(acc_alpha),
-          vel_alpha_(vel_alpha)
+          vel_alpha_(vel_alpha),
+          initialized_(false)
     {}
 
     // Get current orientation quaternion [w, x, y, z]
     std::array<float, 4> getOrientation() {
         auto state = sub_.read();
         if (state == nullptr) {
-            std::cout << "state not available" << std::endl;
-            return {0.0f, 0.0f, 0.0f, 1.0f};
+            std::cout << "[H1 Pose Estimator] State not available" << std::endl;
+            return {1.0f, 0.0f, 0.0f, 0.0f}; // Identity quaternion
         }
-        return {state->imu_state().quaternion()[0], 
-                state->imu_state().quaternion()[1], 
-                state->imu_state().quaternion()[2], 
-                state->imu_state().quaternion()[3]};
+        
+        // Check if IMU data is valid
+        auto quat = std::array<float, 4>{
+            state->imu_state().quaternion()[0],
+            state->imu_state().quaternion()[1], 
+            state->imu_state().quaternion()[2],
+            state->imu_state().quaternion()[3]
+        };
+        
+        // Normalize quaternion to ensure it's valid
+        float norm = std::sqrt(quat[0]*quat[0] + quat[1]*quat[1] + quat[2]*quat[2] + quat[3]*quat[3]);
+        if (norm > 0.0f) {
+            for (int i = 0; i < 4; ++i) {
+                quat[i] /= norm;
+            }
+        }
+        
+        return quat;
     }
 
     // Get current angular velocity [wx, wy, wz]
     std::array<float, 3> getAngularVelocity() {
         auto state = sub_.read();
         if (state == nullptr) {
-            std::cout << "state not available" << std::endl;
+            std::cout << "[H1 Pose Estimator] State not available" << std::endl;
             return {0.0f, 0.0f, 0.0f};
         }
         return {state->imu_state().gyroscope()[0], 
@@ -78,18 +93,35 @@ public:
         return position_;
     }
 
+    // Check if estimator is initialized
+    bool isInitialized() const {
+        return initialized_;
+    }
+
     // Update estimator (should be called periodically in main loop)
     void update(float current_time) {
         auto state = sub_.read();
         if (state == nullptr) {
-            std::cout << "state not available" << std::endl;
+            std::cout << "[H1 Pose Estimator] State not available" << std::endl;
             return;
         }
+        
         if (last_time_ < 0) {
             last_time_ = current_time;
+            initialized_ = false;
             return;
         }
+        
         float dt = current_time - last_time_;
+        if (dt <= 0.0f) {
+            return; // Invalid time step
+        }
+        
+        // Limit dt to prevent large jumps
+        if (dt > 0.1f) {
+            dt = 0.1f;
+        }
+        
         last_time_ = current_time;
 
         // Get acceleration in body frame [ax, ay, az], unit: m/s^2
@@ -100,12 +132,7 @@ public:
         };
 
         // Get orientation
-        auto quat = std::array<float, 4>{
-            state->imu_state().quaternion()[0],
-            state->imu_state().quaternion()[1],
-            state->imu_state().quaternion()[2],
-            state->imu_state().quaternion()[3]
-        };
+        auto quat = getOrientation();
 
         // Transform acceleration to world frame
         auto acc_world = bodyToWorld(acc_body, quat);
@@ -125,6 +152,21 @@ public:
             filtered_vel_[i] = vel_alpha_ * velocity_[i] + (1.0f - vel_alpha_) * filtered_vel_[i];
             position_[i] += filtered_vel_[i] * dt;
         }
+        
+        if (!initialized_) {
+            initialized_ = true;
+            std::cout << "[H1 Pose Estimator] Initialized successfully" << std::endl;
+        }
+    }
+
+    // Reset estimator state
+    void reset() {
+        position_ = {0.0f, 0.0f, 0.0f};
+        velocity_ = {0.0f, 0.0f, 0.0f};
+        filtered_acc_ = {0.0f, 0.0f, 0.0f};
+        filtered_vel_ = {0.0f, 0.0f, 0.0f};
+        last_time_ = -1.0;
+        initialized_ = false;
     }
 
 private:
@@ -136,4 +178,5 @@ private:
     float last_time_;
     float acc_alpha_;
     float vel_alpha_;
+    bool initialized_;
 }; 
