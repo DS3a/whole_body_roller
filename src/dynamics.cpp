@@ -1,4 +1,5 @@
 #include "dynamics.hpp"
+#include <iostream>
 
 namespace whole_body_roller {
     Dynamics::Dynamics(int num_end_effectors, std::shared_ptr<pinocchio::Model> model) {
@@ -102,6 +103,7 @@ namespace whole_body_roller {
         
     bool Dynamics::update_dynamics_constraint() {
         if (!this->is_dynamics_ready) {
+            std::cout << "The dynamics is not ready \n";
             return false; // dynamics not ready
         }
 

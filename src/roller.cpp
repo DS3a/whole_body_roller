@@ -1,4 +1,5 @@
 #include "roller.hpp"
+#include <iostream>
 
 namespace whole_body_roller {
     // this function is just to construct the roller object
@@ -98,6 +99,7 @@ namespace whole_body_roller {
         // then update the frame/joint acceleration constraints
         for (auto& handler : this->constraint_handlers) {
             if (!handler->update_constraint()) {
+                std::cout << "checking if constraint is valid\n";
                 return false; // if any constraint fails to update, we return false
             }
         }
