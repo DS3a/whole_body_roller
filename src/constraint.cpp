@@ -32,13 +32,21 @@ namespace whole_body_roller {
         return false;
     }
 
-    void Constraint::ignore_contact_constraints(bool ignore_contacts=true) {
+    void Constraint::ignore_contact_constraints(bool ignore_contacts) {
         this->contacts_are_considered = !ignore_contacts;
         // This function is to ignore the contact constraints, 
         // which means that the contact constraints will not be considered in the constraint matrix
         // This is useful for testing purposes or when we don't want to consider contact constraints
         // this->contact_constraints = std::vector<Eigen::MatrixXd>(this->dec_v->nc_, Eigen::MatrixXd::Zero(this->num_constraints_, 6));
     }
+    void Constraint::ignore_contact_constraints() {
+        this->contacts_are_considered = true;
+        // This function is to ignore the contact constraints, 
+        // which means that the contact constraints will not be considered in the constraint matrix
+        // This is useful for testing purposes or when we don't want to consider contact constraints
+        // this->contact_constraints = std::vector<Eigen::MatrixXd>(this->dec_v->nc_, Eigen::MatrixXd::Zero(this->num_constraints_, 6));
+    }
+
 
     bool Constraint::set_contact_constraints(std::vector<Eigen::MatrixXd> constraints) {
         if (constraints.size() == this->dec_v->nc_) {

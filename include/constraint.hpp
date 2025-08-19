@@ -35,7 +35,6 @@ namespace whole_body_roller {
         Eigen::MatrixXd tau_constraints;
 
 
-        void ignore_contact_constraints();
         // One vector(list) of size nc with matrices of size (num_constraints, 6)
         std::vector<Eigen::MatrixXd> contact_constraints;
 
@@ -116,6 +115,7 @@ namespace whole_body_roller {
         bool is_constraint_valid();
 
         void ignore_contact_constraints(bool ignore_contacts);
+        void ignore_contact_constraints();
 
         Eigen::MatrixXd get_constraint_matrix();
         // {
