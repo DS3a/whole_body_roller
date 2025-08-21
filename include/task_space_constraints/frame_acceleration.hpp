@@ -5,7 +5,7 @@ namespace whole_body_roller {
     class FrameAccelerationConstraint : public whole_body_roller::ConstraintHandler {
     public:
         std::shared_ptr<whole_body_roller::Dynamics> dynamics;
-        std::shared_ptr<whole_body_roller::Constraint> constraint;
+        // std::shared_ptr<whole_body_roller::Constraint> constraint;
         std::string frame_name_;
         Eigen::VectorXd acceleration_target;
 

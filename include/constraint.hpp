@@ -12,16 +12,6 @@ namespace whole_body_roller {
         INEQUALITY
     };
 
-    // this is a class for non-static constraints, e.g., dynamics, and 
-    // frame acceleration constraints. I want to update all the constraints before adding them to the qp
-    class ConstraintHandler {
-    public:
-        virtual bool update_constraint() = 0; // this function basically updates the non-static constraints with new values
-        // it also ensures that the constraint will pass `is_constraint_valid()` check for anything where the `contacts_are_considered`
-        virtual ~ConstraintHandler() = default;
-
-    };
-
     class Constraint {
     public:
         // the decision variables should be read only
@@ -134,4 +124,28 @@ namespace whole_body_roller {
         // }
 
     };
+
+    // this is a class for non-static constraints, e.g., dynamics, and 
+    // frame acceleration constraints. I want to update all the constraints before adding them to the qp
+    class ConstraintHandler {
+    public:
+        bool is_constraint_active = true; // default value is true
+        std::shared_ptr<whole_body_roller::Constraint> constraint;
+
+        virtual bool update_constraint() = 0; // this function basically updates the non-static constraints with new values
+        // it also ensures that the constraint will pass `is_constraint_valid()` check for anything where the `contacts_are_considered`
+        virtual ~ConstraintHandler() = default;
+
+        void set_constraint_active(bool active) {
+            this->is_constraint_active = active;
+        }
+
+        bool constraint_is_active() const {
+            return this->is_constraint_active;
+        }
+
+    };
+
+
+
 }

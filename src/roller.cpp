@@ -34,7 +34,11 @@ namespace whole_body_roller {
     bool Roller::solve_qp() {
         int num_eq_constraints = 0;
         int num_ineq_constraints = 0;
-        for (auto& constraint : this->constraints) {
+        for (auto& constraint_handler : this->constraint_handlers) {
+            if (!constraint_handler->constraint_is_active()) {
+                continue; // skip the constraint if it is not active
+            }
+            auto constraint = constraint_handler->constraint; // get the constraint from the handler
             if (!constraint->is_constraint_valid()) {
                 return false; // if any constraint is not valid, we return false
             }
@@ -55,7 +59,11 @@ namespace whole_body_roller {
         // iterate through all constraints and append the constraint matrices and biases
         int eq_con_col = 0;
         int ineq_con_col = 0;
-        for (auto& constraint : this->constraints) {
+        for (auto& constraint_handler : this->constraint_handlers) {
+            auto constraint = constraint_handler->constraint; // get the constraint from the handler
+            if (!constraint_handler->constraint_is_active()) {
+                continue; // skip the constraint if it is not active
+            }
             if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::EQUALITY) {
                 // append the equality constraint matrix and bias
                 eq_constraint_matrix.block(0, eq_con_col, nvars, constraint->num_constraints_) = constraint->get_constraint_matrix().transpose();
