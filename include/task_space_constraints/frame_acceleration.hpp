@@ -1,5 +1,6 @@
 #include "constraint.hpp"
 #include "dynamics.hpp"
+#include <iostream>
 
 namespace whole_body_roller {
     class FrameAccelerationConstraint : public whole_body_roller::ConstraintHandler {
@@ -34,6 +35,7 @@ namespace whole_body_roller {
         }
 
         bool update_constraint() override {
+            std::cout << "updating frame acceleration constraint for frame: " << this->frame_name_ << "\n";
             if (!this->dynamics->is_dynamics_ready || !this->dynamics->model_->existFrame(this->frame_name_)) {
                 return false; // dynamics not ready or frame does not exist
             }
@@ -49,10 +51,13 @@ namespace whole_body_roller {
                                                                    this->dynamics->model_->getFrameId(this->frame_name_), 
                                                                    pinocchio::LOCAL_WORLD_ALIGNED);
                                                                    // see dynamics.cpp#111 for explanation as to why we use LOCAL_WORLD_ALIGNED
-
+            // std::cout << "jacobian size is " << jacobian.rows() << " x " << jacobian.cols() << "\n";
+            std::cout << "computed jacobain for frame: " << this->frame_name_ << "\n";
 
             // Set the constraints for the acceleration
-            update_success &= this->constraint->set_qdd_constraints(jacobian.transpose());
+            update_success &= this->constraint->set_qdd_constraints(jacobian);
+            std::cout << "set qdd constraints for frame: " << this->frame_name_ << " update success : " << update_success << "\n";
+
             double dt = 1e-8; // Small time step for numerical stability
 
             Eigen::VectorXd q_fut = Eigen::VectorXd::Zero(this->dynamics->model_->nq);
@@ -80,6 +85,7 @@ namespace whole_body_roller {
             this->constraint->ignore_contact_constraints();
             // this needs to be called everytime as it refreshes the thingi based on the number of contact points
             
+    
             return update_success;
         } 
     };

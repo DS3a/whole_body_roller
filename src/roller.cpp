@@ -76,6 +76,7 @@ namespace whole_body_roller {
                 ineq_con_col += constraint->num_constraints_;
             }
         }
+        std::cout << "added all constraints \n";
 
         Eigen::MatrixXd G = Eigen::MatrixXd::Identity(nvars, nvars); // G matrix for the qp
         Eigen::VectorXd g0 = Eigen::VectorXd::Zero(nvars); // g0 vector for the qp
@@ -83,11 +84,14 @@ namespace whole_body_roller {
         Eigen::VectorXd x(nvars); // solution vector for the qp
 
         QuadProgpp::Solver qp_solver;
+        std::cout << "attempting solve \n";
         QuadProgpp::Status::Value v = qp_solver.solve(G, g0, eq_constraint_matrix, eq_constraint_bias, 
                         ineq_constraint_matrix, ineq_constraint_bias, x);
         
+        std::cout << "attempted solve \n";
         if (v == 0) {
             this->joint_torques = std::make_shared<Eigen::VectorXd>(x.segment(this->dec_v->nv_, this->dec_v->nv_ - 6)); // extract the joint torques from the solution vector
+            std::cout << "solve successful : " << this->joint_torques->transpose() << "\n";
             return true;
         }
 
@@ -112,6 +116,7 @@ namespace whole_body_roller {
             }
         }
 
+        std::cout << "updated all constraints \n";
         return this->solve_qp(); // solve the qp with the updated constraints
     }
 

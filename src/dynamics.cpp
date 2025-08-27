@@ -53,12 +53,15 @@ namespace whole_body_roller {
             this->end_effectors.push_back(ee);
             this->end_effector_map_[frame_name] = this->added_end_effectors;
             this->added_end_effectors++;
-            
+
+            std::cout << "added end effector " << this->added_end_effectors << " out of " << this->num_end_effectors_ << "\n";
+
             if (this->added_end_effectors == this->num_end_effectors_) {
                 this->is_dynamics_ready = true;
             }
             return true;
         }
+        std::cout << "the frame does not exist \n";
         return false;
     }
 
@@ -151,7 +154,8 @@ namespace whole_body_roller {
         update_success &= this->dynamics_constraint->set_constraint_bias((-1)*(this->data_->tau)); // -h(q, qd)
         // we set the acceleration of rnea to 0 to avoid it computing the inverse dynamics of the Mass matrix
         // that is being done separately using crba as it needs to be fed into a different constraint
-        
+
+        std::cout << "Dynamics updated successfully \n"; 
         return update_success;
     }
 
