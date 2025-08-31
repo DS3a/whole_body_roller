@@ -52,6 +52,11 @@ namespace whole_body_roller {
         //     // this is just to test whether the contact constraints get concatenated properly
         // }
 
+        // this function updates the number of contact points
+        void update_nc(); 
+        //     this->contact_constraints = std::vector<Eigen::MatrixXd>(this->dec_v->nc_, Eigen::MatrixXd::Zero(this->num_constraints_, 6));
+        // }
+
         bool set_qdd_constraints(Eigen::MatrixXd constraints);
         // {
         //     if (constraints.rows() == this->num_constraints_ && constraints.cols() == this->dec_v->nv_) {

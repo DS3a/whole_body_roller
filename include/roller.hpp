@@ -11,7 +11,8 @@
 #include "constraint.hpp"
 
 #include "dynamics.hpp"
-#include "QuadProg++.hh"
+// #include "QuadProg++.hh"
+#include <casadi/casadi.hpp>
 
 namespace whole_body_roller {
 

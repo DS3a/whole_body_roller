@@ -11,7 +11,7 @@ pkg_check_modules(PINOCCHIO REQUIRED pinocchio)
 
 # add eigen as a dependency
 find_package(Eigen3 REQUIRED)
-
+find_package(casadi REQUIRED)
 
 # Include directories and link libraries
 include_directories(${PINOCCHIO_INCLUDE_DIRS})
@@ -20,11 +20,11 @@ add_definitions(${PINOCCHIO_CFLAGS_OTHER})
 
 include_directories(include)
 
-add_library(quadprogpp STATIC
-    QuadProgpp/src/Array.cc
-    QuadProgpp/src/QuadProg++.cc)
-target_include_directories(quadprogpp PUBLIC
-    QuadProgpp/src)
+# add_library(quadprogpp STATIC
+#     QuadProgpp/src/Array.cc
+#     QuadProgpp/src/QuadProg++.cc)
+# target_include_directories(quadprogpp PUBLIC
+#     QuadProgpp/src)
 
 
 # Source files
@@ -38,7 +38,8 @@ add_library(whole_body_roller
 )
 
 target_link_libraries(whole_body_roller
-    quadprogpp
+    # quadprogpp
+    casadi
     ${PINOCCHIO_LIBRARIES}
 )
 # Dependencies
@@ -52,7 +53,7 @@ set(DEPENDENCIES
 add_executable(whole_body_roller_test src/test.cpp)
 target_link_libraries(whole_body_roller_test 
     whole_body_roller 
-    quadprogpp)
+    casadi)
 target_include_directories(whole_body_roller PUBLIC
     include
     ${DEPENDENCIES}
