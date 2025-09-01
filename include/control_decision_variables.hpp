@@ -9,11 +9,13 @@ namespace whole_body_roller {
     public:
         int nv_; // number of variables in qdd
         int nc_; // number of contact points
-        std::shared_ptr<Eigen::VectorXd> qdd;
-        std::shared_ptr<Eigen::VectorXd> tau;
-        std::shared_ptr<std::vector<Eigen::VectorXd>> lambda_c;
+        int ntau_;
+    //     std::shared_ptr<Eigen::VectorXd> qdd;
+    //     std::shared_ptr<Eigen::VectorXd> tau;
+    //     std::shared_ptr<std::vector<Eigen::VectorXd>> lambda_c;
     public:
         ControlDecisionVariables(int nv, int nc);
+        int get_ndv() const { return nv_ + ntau_ + 6 * nc_; }
     //         this->nv_ = nv;
     //         this->nc_ = nc;
     //         this->qdd = std::make_shared<Eigen::VectorXd>(nv);

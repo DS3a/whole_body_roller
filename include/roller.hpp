@@ -23,9 +23,12 @@ namespace whole_body_roller {
         std::shared_ptr<whole_body_roller::Dynamics> dynamics;
 
         std::shared_ptr<Eigen::VectorXd> joint_torques;
+        int num_eq_constraints=0;
+        int num_ineq_constraints=0;
 
         std::vector<std::shared_ptr<whole_body_roller::Constraint>> constraints;
         std::vector<std::shared_ptr<whole_body_roller::ConstraintHandler>> constraint_handlers;
+        std::shared_ptr<casadi::Opti> optim;
 
     public:
         // this function is just to construct the roller object
@@ -44,6 +47,9 @@ namespace whole_body_roller {
         //          adds equality and ineq constraints, to the qp and then solves them
         bool solve_qp();
 
+        void consolidate_constraints();
+
+        void update_optim();
 
         /*
          * This funciton is the main control loop, it will update the dynamics 

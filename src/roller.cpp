@@ -1,5 +1,6 @@
 #include "roller.hpp"
 #include <iostream>
+#include <casadi_helpers.hpp>
 
 namespace whole_body_roller {
     // this function is just to construct the roller object
@@ -24,32 +25,36 @@ namespace whole_body_roller {
             // we can add the constraint handler to the constraint handler list
             // so that we can update the constraints before solving the qp
             this->constraint_handlers.push_back(constraint_handler);
+            this->consolidate_constraints(); // update the number of equality and inequality constraints
             return true;
         }
         return false; // size mismatch
     }
 
-    // this function consolidates all the constraints, makes sure they're all valid
-    //          adds equality and ineq constraints, to the qp and then solves them
-    bool Roller::solve_qp() {
-        int num_eq_constraints = 0;
-        int num_ineq_constraints = 0;
+    void Roller::consolidate_constraints() {
+        // TODO implement this function to consolidate all the constraints
         for (auto& constraint_handler : this->constraint_handlers) {
-            if (!constraint_handler->constraint_is_active()) {
-                continue; // skip the constraint if it is not active
-            }
+            // if (!constraint_handler->constraint_is_active()) {
+            //     continue; // skip the constraint if it is not active
+            // } // we still need to count the inactive constraints to maintain the size of the constraint matrices and zero them out
             auto constraint = constraint_handler->constraint; // get the constraint from the handler
-            if (!constraint->is_constraint_valid()) {
-                return false; // if any constraint is not valid, we return false
-            }
+            // if (!constraint->is_constraint_valid()) {
+            //     return false; // if any constraint is not valid, we return false
+            // }
             if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::EQUALITY) {
                 num_eq_constraints += constraint->num_constraints_;
             } else if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::INEQUALITY) {
                 num_ineq_constraints += constraint->num_constraints_;
             }
         }
+    }
 
-        int nvars = 2 * (this->dec_v->nv_) - 6 + 6 * (this->dec_v->nc_); // number of variables in the qp
+    // this function consolidates all the constraints, makes sure they're all valid
+    //          adds equality and ineq constraints, to the qp and then solves them
+    bool Roller::solve_qp() {
+        // int num_eq_constraints = 0;
+        // int num_ineq_constraints = 0;
+        int nvars = this->dec_v->get_ndv(); // number of variables in the qp
         // Create equality the constraint matrix
         Eigen::MatrixXd eq_constraint_matrix(nvars, num_eq_constraints);
         Eigen::VectorXd eq_constraint_bias(num_eq_constraints);
@@ -61,18 +66,38 @@ namespace whole_body_roller {
         int ineq_con_col = 0;
         for (auto& constraint_handler : this->constraint_handlers) {
             auto constraint = constraint_handler->constraint; // get the constraint from the handler
-            if (!constraint_handler->constraint_is_active()) {
-                continue; // skip the constraint if it is not active
-            }
+            // if (!constraint_handler->constraint_is_active()) {
+            //     continue; // skip the constraint if it is not active
+            // } // we still need to add the inactive constraints to maintain the size of the constraint matrices and zero them out
             if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::EQUALITY) {
                 // append the equality constraint matrix and bias
-                eq_constraint_matrix.block(0, eq_con_col, nvars, constraint->num_constraints_) = constraint->get_constraint_matrix().transpose();
-                eq_constraint_bias.segment(eq_con_col, constraint->num_constraints_) = constraint->constraint_bias;
+                if (constraint_handler->constraint_is_active()) {
+                    eq_constraint_matrix.block(0, eq_con_col, nvars, constraint->num_constraints_) = 
+                        constraint->get_constraint_matrix().transpose();
+                    eq_constraint_bias.segment(eq_con_col, constraint->num_constraints_) = 
+                        constraint->constraint_bias;
+                } else {
+                    eq_constraint_matrix.block(0, eq_con_col, nvars, constraint->num_constraints_) = 
+                        Eigen::MatrixXd::Zero(nvars, constraint->num_constraints_);
+                    eq_constraint_bias.segment(eq_con_col, constraint->num_constraints_) = 
+                        Eigen::VectorXd::Zero(constraint->num_constraints_);
+                }
                 eq_con_col += constraint->num_constraints_;
             } else if (constraint->constraint_type_ == whole_body_roller::constraint_type_t::INEQUALITY) {
                 // append the inequality constraint matrix and bias
-                ineq_constraint_matrix.block(0, ineq_con_col, nvars, constraint->num_constraints_) = constraint->get_constraint_matrix().transpose();
-                ineq_constraint_bias.segment(ineq_con_col, constraint->num_constraints_) = constraint->constraint_bias;
+                if (constraint_handler->constraint_is_active()) {
+                    ineq_constraint_matrix.block(0, ineq_con_col, nvars, constraint->num_constraints_) = 
+                        constraint->get_constraint_matrix().transpose();
+                    ineq_constraint_bias.segment(ineq_con_col, constraint->num_constraints_) = 
+                        constraint->constraint_bias;
+                } else {
+                    ineq_constraint_matrix.block(0, ineq_con_col, nvars, constraint->num_constraints_) = 
+                        Eigen::MatrixXd::Zero(nvars, constraint->num_constraints_);
+                    ineq_constraint_bias.segment(ineq_con_col, constraint->num_constraints_) = 
+                        Eigen::VectorXd::Zero(constraint->num_constraints_);
+                }
+                
+                
                 ineq_con_col += constraint->num_constraints_;
             }
         }
@@ -82,7 +107,7 @@ namespace whole_body_roller {
         Eigen::VectorXd g0 = Eigen::VectorXd::Zero(nvars); // g0 vector for the qp
 
         Eigen::VectorXd x(nvars); // solution vector for the qp
-
+ 
         // QuadProgpp::Solver qp_solver;
         // std::cout << "attempting solve \n";
         // QuadProgpp::Status::Value v = qp_solver.solve(G, g0, eq_constraint_matrix, eq_constraint_bias, 
@@ -96,6 +121,15 @@ namespace whole_body_roller {
         // }
 
         return false;
+    }
+
+    void Roller::update_optim() {
+        // TODO implement this function to update the optim object
+        this->optim = std::make_shared<casadi::Opti>();
+        casadi::MX x = this->optim->variable(this->dec_v->get_ndv()); // decision variables
+        // TODO create parameters for eq_const_mat and eq_const_bias
+        // TODO create parameters for ineq_const_mat and ineq_const_bias
+        // TODO set objective and constraints
     }
 
 
@@ -115,6 +149,9 @@ namespace whole_body_roller {
                 return false; // if any constraint fails to update, we return false
             }
         }
+
+        // TODO check if dec_v->get_ndvs() has changed or if the number of constraints 
+        // have changed and update the optimizer if it has
 
         std::cout << "updated all constraints \n";
         return this->solve_qp(); // solve the qp with the updated constraints

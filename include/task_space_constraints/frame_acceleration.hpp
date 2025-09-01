@@ -1,3 +1,5 @@
+#pragma once
+
 #include "constraint.hpp"
 #include "dynamics.hpp"
 #include <iostream>

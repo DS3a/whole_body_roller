@@ -39,9 +39,8 @@ int main(int argc, const char **argv) {
     cdv = std::make_shared<whole_body_roller::ControlDecisionVariables>(7, 2);
 
     std::cout << "Control Decision Variables initialized with nqdd: " << cdv->nv_ 
-                << " and tau: " << cdv->nv_-6
+                << " and tau: " << cdv->ntau_
               << " and nc: " << cdv->nc_
-              << "\nwith each lambda of: " << (*cdv->lambda_c)[0].size()
                << std::endl;
 
     whole_body_roller::Constraint c(cdv, 1, whole_body_roller::constraint_type_t::INEQUALITY);
@@ -88,15 +87,30 @@ int main(int argc, const char **argv) {
     // std::memcpy(ineq_con_dm.ptr(), c.get_constraint_matrix().data(), 14*14*sizeof(double));
     std::cout << "the shape of the constraint matrix is " << c.get_constraint_matrix().rows() << " x " << c.get_constraint_matrix().cols() << "\n";
     std::cout << "the shaep of the constarint bias is " << c.constraint_bias.size() << "\n";
-    opti.set_value(ineq_con, toDM(c.get_constraint_matrix()));
-
-    opti.set_value(ineq_bias, toDMcol(5*Eigen::VectorXd::Ones(1)));
-    // std::memcpy(ineq_bias_dm.ptr(), c.constraint_bias.data(), 14*sizeof(double));
-    // opti.set_value(ineq_bias, ineq_bias_dm);
+     // std::memcpy(ineq_bias_dm.ptr(), c.constraint_bias.data(), 14*sizeof(double));
+      // opti.set_value(ineq_bias, ineq_bias_dm);
     opti.subject_to(casadi::MX::mtimes(ineq_con, x) >= ineq_bias); // example constraints
-    opti.solver("ipopt");
-    auto sol = opti.solve();
-    std::cout << "solution is " << sol.value(x) << "\n";
+    // casadi::Dict opts;
+    // opts["print_time"] = false;
 
+    // casadi::Dict ipopt_opts;
+    // ipopt_opts["print_level"] = 0; // 0 = no output
+    // ipopt_opts["sb"] = "yes";      // suppress IPOPT banner
+
+    // opts["ipopt"] = ipopt_opts;
+
+    opti.solver("ipopt");
+    for (int i=0; i<100; i++) {
+      opti.set_value(ineq_con, toDM(c.get_constraint_matrix()));
+
+      opti.set_value(ineq_bias, toDMcol(5*Eigen::VectorXd::Ones(1)));
+ 
+      
+      // opti.solver("ipopt");
+      auto sol = opti.solve();
+      std::cout << "solution is " << sol.value(x) << "\n";
+      std::cout << "the size of x is "  << sol.value(x).size().first << "\n";
+
+    }
     return 0;
 }
