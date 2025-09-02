@@ -13,6 +13,7 @@ namespace whole_body_roller {
         // this->dec_v = dv;
         this->dynamics = dyn;
         this->dec_v = this->dynamics->get_dec_v();
+        std::cout << "adding dynamics constraint\n";
         this->add_constraint(this->dynamics->dynamics_constraint, this->dynamics);
     }
 
@@ -26,6 +27,7 @@ namespace whole_body_roller {
             // so that we can update the constraints before solving the qp
             this->constraint_handlers.push_back(constraint_handler);
             this->consolidate_constraints(); // update the number of equality and inequality constraints
+            this->update_optim(); // update the qp with the new number of constraints
             return true;
         }
         return false; // size mismatch
@@ -106,47 +108,51 @@ namespace whole_body_roller {
         std::cout << "trying to set casadi params\n";
         if (this->num_eq_constraints > 0) {
             std::cout << "eq constraints exist, adding them\n";
-            std::cout << "shape of eq_con " << this->eq_con.size() << std::endl;
+            std::cout << "shape of eq_con " << this->optim->eq_con.size() << std::endl;
             std::cout << "shape of eigen mat " << eq_constraint_matrix.rows() << ", " << eq_constraint_matrix.cols() << "\n";
             casadi::DM dm_eqm = casadi_helpers::toDM(eq_constraint_matrix.transpose());
             std::cout << "running set value\n";
-            this->optim.set_value(this->eq_con, dm_eqm);
+            this->optim->opti.set_value(this->optim->eq_con, dm_eqm);
             std::cout << "eq constraints exist, added matrix, now adding bias\n";
-            this->optim.set_value(this->eq_bias, casadi_helpers::toDMcol(eq_constraint_bias));
+            this->optim->opti.set_value(this->optim->eq_bias, casadi_helpers::toDMcol(eq_constraint_bias));
         }
 
         if (this->num_ineq_constraints > 0) {
             std::cout << "ineq constraints exist, adding them\n";
-            this->optim.set_value(this->ineq_con, casadi_helpers::toDM(ineq_constraint_matrix.transpose()));
-            this->optim.set_value(this->ineq_bias, casadi_helpers::toDMcol(ineq_constraint_bias));
+            this->optim->opti.set_value(this->optim->ineq_con, casadi_helpers::toDM(ineq_constraint_matrix.transpose()));
+            this->optim->opti.set_value(this->optim->ineq_bias, casadi_helpers::toDMcol(ineq_constraint_bias));
         }
 
         std::cout << "set casadi params\n";
-        auto sol = this->optim.solve();
-        std::cout << "the solution is " << sol.value(this->z) << std::endl;
+        auto sol = this->optim->opti.solve();
+        std::cout << "the solution is " << sol.value(this->optim->z) << std::endl;
 
         return false;
     }
 
     void Roller::update_optim() {
         // DONE implement this function to update the optim object
-        this->optim = casadi::Opti();
-        this->z = this->optim.variable(this->dec_v->get_ndv()); // decision variables
-        // DONE create parameters for eq_const_mat and eq_const_bias
-        if (this->num_eq_constraints > 0) {
-            this->eq_con = this->optim.parameter(this->num_eq_constraints, this->dec_v->get_ndv());
-            this->eq_bias = this->optim.parameter(this->num_eq_constraints);
-            this->optim.subject_to(casadi::MX::mtimes(eq_con, z) == eq_bias); // equality constraints
-        }
-        // DONE create parameters for ineq_const_mat and ineq_const_bias
-        if (this->num_ineq_constraints > 0) {
-            this->ineq_con = this->optim.parameter(this->num_ineq_constraints, this->dec_v->get_ndv());
-            this->ineq_bias = this->optim.parameter(this->num_ineq_constraints);
-            this->optim.subject_to(casadi::MX::mtimes(ineq_con, z) >= ineq_bias); // inequality constraints
-        }
-        // TODO set objective and constraints
-        this->optim.minimize(casadi::MX::dot(z, z)); // objective function: minimize the sum of squares of decision variables
-        this->optim.solver("ipopt");
+        this->optim = std::make_shared<casadi_helpers::CaSolver>(
+            this->dec_v->get_ndv(), 
+            this->num_eq_constraints, 
+            this->num_ineq_constraints);
+        // this->optim = casadi::Opti();
+        // this->z = this->optim.variable(this->dec_v->get_ndv()); // decision variables
+        // // DONE create parameters for eq_const_mat and eq_const_bias
+        // if (this->num_eq_constraints > 0) {
+        //     this->eq_con = this->optim.parameter(this->num_eq_constraints, this->dec_v->get_ndv());
+        //     this->eq_bias = this->optim.parameter(this->num_eq_constraints);
+        //     this->optim.subject_to(casadi::MX::mtimes(eq_con, z) == eq_bias); // equality constraints
+        // }
+        // // DONE create parameters for ineq_const_mat and ineq_const_bias
+        // if (this->num_ineq_constraints > 0) {
+        //     this->ineq_con = this->optim.parameter(this->num_ineq_constraints, this->dec_v->get_ndv());
+        //     this->ineq_bias = this->optim.parameter(this->num_ineq_constraints);
+        //     this->optim.subject_to(casadi::MX::mtimes(ineq_con, z) >= ineq_bias); // inequality constraints
+        // }
+        // // TODO set objective and constraints
+        // this->optim.minimize(casadi::MX::dot(z, z)); // objective function: minimize the sum of squares of decision variables
+        // this->optim.solver("ipopt");
     }
 
 
@@ -171,9 +177,9 @@ namespace whole_body_roller {
         // have changed and update the optimizer if it has
         // are there any other cases where we need to update the optimizer?
         this->consolidate_constraints();
-        if (this->z.size().first != this->dec_v->get_ndv() || 
-            this->num_eq_constraints != this->eq_con.size().first || 
-            this->num_ineq_constraints != this->ineq_con.size().first
+        if (this->optim->z.size().first != this->dec_v->get_ndv() || 
+            this->num_eq_constraints != this->optim->eq_con.size().first || 
+            this->num_ineq_constraints != this->optim->ineq_con.size().first
         ) {
             std::cout << "need to rebuild optim\n";
             this->update_optim();

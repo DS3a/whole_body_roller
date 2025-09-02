@@ -33,4 +33,33 @@ namespace casadi_helpers {
     std::memcpy(dm.ptr(), v.data(), sizeof(double)*v.size());
     return dm;
     }
+
+    class CaSolver {
+    public:
+        casadi::Opti opti;
+        casadi::MX z; // Decision variables
+        casadi::MX obj; // Objective function
+        casadi::MX eq_con; // Equality constraints
+        casadi::MX eq_bias; // Equality constraint bias
+        casadi::MX ineq_con; // Inequality constraints
+        casadi::MX ineq_bias; // Inequality constraint bias
+
+        CaSolver(int ndv, int neq, int nineq) {
+            this->opti = casadi::Opti();
+            this->z = this->opti.variable(ndv); // decision variables
+            if (neq > 0) {
+                this->eq_con = this->opti.parameter(neq, ndv);
+                this->eq_bias = this->opti.parameter(neq);
+                this->opti.subject_to(casadi::MX::mtimes(eq_con, z) == eq_bias); // equality constraints
+            }
+            if (nineq > 0) {
+                this->ineq_con = this->opti.parameter(nineq, ndv);
+                this->ineq_bias = this->opti.parameter(nineq);
+                this->opti.subject_to(casadi::MX::mtimes(ineq_con, z) >= ineq_bias); // inequality constraints
+            }
+            this->obj = casadi::MX::dot(z, z); // Initialize objective function to zero
+            this->opti.minimize(this->obj); // Set the objective function
+            this->opti.solver("ipopt");
+        }
+    };
 }
