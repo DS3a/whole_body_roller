@@ -28,7 +28,12 @@ namespace whole_body_roller {
 
         std::vector<std::shared_ptr<whole_body_roller::Constraint>> constraints;
         std::vector<std::shared_ptr<whole_body_roller::ConstraintHandler>> constraint_handlers;
-        std::shared_ptr<casadi::Opti> optim;
+        casadi::Opti optim;
+        casadi::MX z;
+        casadi::MX eq_con;
+        casadi::MX eq_bias;
+        casadi::MX ineq_con;
+        casadi::MX ineq_bias;
 
     public:
         // this function is just to construct the roller object

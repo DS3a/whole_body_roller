@@ -12,7 +12,9 @@ namespace casadi_helpers {
     // Make a concrete, contiguous, column-major copy (eval() materializes expressions/views)
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> C = M.eval();
     casadi::DM dm = casadi::DM::zeros(C.rows(), C.cols());
+    std::cout << "shape of basee mat " << C.rows() << ", " << C.cols() << "\n";
     std::memcpy(dm.ptr(), C.data(), sizeof(double)*C.rows()*C.cols());
+    std::cout << "done memcpy\n";
     return dm;
     }
 
@@ -20,6 +22,7 @@ namespace casadi_helpers {
     inline casadi::DM toDM(const Eigen::SparseMatrix<double>& S) {
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> C = Eigen::MatrixXd(S);
     casadi::DM dm = casadi::DM::zeros(C.rows(), C.cols());
+    std::cout << "shape of sparse mat " << C.rows() << ", " << C.cols() << "\n";
     std::memcpy(dm.ptr(), C.data(), sizeof(double)*C.rows()*C.cols());
     return dm;
     }

@@ -30,7 +30,7 @@ namespace whole_body_roller {
         }
         return false; // size mismatch
     }
-
+    // this function consolidates all the constraints, coutns the number of equality and inequality constraints,
     void Roller::consolidate_constraints() {
         // TODO implement this function to consolidate all the constraints
         for (auto& constraint_handler : this->constraint_handlers) {
@@ -49,8 +49,8 @@ namespace whole_body_roller {
         }
     }
 
-    // this function consolidates all the constraints, makes sure they're all valid
-    //          adds equality and ineq constraints, to the qp and then solves them
+
+    // adds equality and ineq constraints, to the qp and then solves them
     bool Roller::solve_qp() {
         // int num_eq_constraints = 0;
         // int num_ineq_constraints = 0;
@@ -103,33 +103,50 @@ namespace whole_body_roller {
         }
         std::cout << "added all constraints \n";
 
-        Eigen::MatrixXd G = Eigen::MatrixXd::Identity(nvars, nvars); // G matrix for the qp
-        Eigen::VectorXd g0 = Eigen::VectorXd::Zero(nvars); // g0 vector for the qp
+        std::cout << "trying to set casadi params\n";
+        if (this->num_eq_constraints > 0) {
+            std::cout << "eq constraints exist, adding them\n";
+            std::cout << "shape of eq_con " << this->eq_con.size() << std::endl;
+            std::cout << "shape of eigen mat " << eq_constraint_matrix.rows() << ", " << eq_constraint_matrix.cols() << "\n";
+            casadi::DM dm_eqm = casadi_helpers::toDM(eq_constraint_matrix.transpose());
+            std::cout << "running set value\n";
+            this->optim.set_value(this->eq_con, dm_eqm);
+            std::cout << "eq constraints exist, added matrix, now adding bias\n";
+            this->optim.set_value(this->eq_bias, casadi_helpers::toDMcol(eq_constraint_bias));
+        }
 
-        Eigen::VectorXd x(nvars); // solution vector for the qp
- 
-        // QuadProgpp::Solver qp_solver;
-        // std::cout << "attempting solve \n";
-        // QuadProgpp::Status::Value v = qp_solver.solve(G, g0, eq_constraint_matrix, eq_constraint_bias, 
-        //                 ineq_constraint_matrix, ineq_constraint_bias, x);
-        
-        // std::cout << "attempted solve \n";
-        // if (v == 0) {
-        //     this->joint_torques = std::make_shared<Eigen::VectorXd>(x.segment(this->dec_v->nv_, this->dec_v->nv_ - 6)); // extract the joint torques from the solution vector
-        //     std::cout << "solve successful : " << this->joint_torques->transpose() << "\n";
-        //     return true;
-        // }
+        if (this->num_ineq_constraints > 0) {
+            std::cout << "ineq constraints exist, adding them\n";
+            this->optim.set_value(this->ineq_con, casadi_helpers::toDM(ineq_constraint_matrix.transpose()));
+            this->optim.set_value(this->ineq_bias, casadi_helpers::toDMcol(ineq_constraint_bias));
+        }
+
+        std::cout << "set casadi params\n";
+        auto sol = this->optim.solve();
+        std::cout << "the solution is " << sol.value(this->z) << std::endl;
 
         return false;
     }
 
     void Roller::update_optim() {
-        // TODO implement this function to update the optim object
-        this->optim = std::make_shared<casadi::Opti>();
-        casadi::MX x = this->optim->variable(this->dec_v->get_ndv()); // decision variables
-        // TODO create parameters for eq_const_mat and eq_const_bias
-        // TODO create parameters for ineq_const_mat and ineq_const_bias
+        // DONE implement this function to update the optim object
+        this->optim = casadi::Opti();
+        this->z = this->optim.variable(this->dec_v->get_ndv()); // decision variables
+        // DONE create parameters for eq_const_mat and eq_const_bias
+        if (this->num_eq_constraints > 0) {
+            this->eq_con = this->optim.parameter(this->num_eq_constraints, this->dec_v->get_ndv());
+            this->eq_bias = this->optim.parameter(this->num_eq_constraints);
+            this->optim.subject_to(casadi::MX::mtimes(eq_con, z) == eq_bias); // equality constraints
+        }
+        // DONE create parameters for ineq_const_mat and ineq_const_bias
+        if (this->num_ineq_constraints > 0) {
+            this->ineq_con = this->optim.parameter(this->num_ineq_constraints, this->dec_v->get_ndv());
+            this->ineq_bias = this->optim.parameter(this->num_ineq_constraints);
+            this->optim.subject_to(casadi::MX::mtimes(ineq_con, z) >= ineq_bias); // inequality constraints
+        }
         // TODO set objective and constraints
+        this->optim.minimize(casadi::MX::dot(z, z)); // objective function: minimize the sum of squares of decision variables
+        this->optim.solver("ipopt");
     }
 
 
@@ -152,6 +169,15 @@ namespace whole_body_roller {
 
         // TODO check if dec_v->get_ndvs() has changed or if the number of constraints 
         // have changed and update the optimizer if it has
+        // are there any other cases where we need to update the optimizer?
+        this->consolidate_constraints();
+        if (this->z.size().first != this->dec_v->get_ndv() || 
+            this->num_eq_constraints != this->eq_con.size().first || 
+            this->num_ineq_constraints != this->ineq_con.size().first
+        ) {
+            std::cout << "need to rebuild optim\n";
+            this->update_optim();
+        }
 
         std::cout << "updated all constraints \n";
         return this->solve_qp(); // solve the qp with the updated constraints

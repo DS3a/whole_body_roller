@@ -112,5 +112,9 @@ int main(int argc, const char **argv) {
       std::cout << "the size of x is "  << sol.value(x).size().first << "\n";
 
     }
+
+    casadi::MX test_variable;
+    std::cout << "the size of test_variable is " << test_variable.size().first << " x " << test_variable.size().second << "\n";
+
     return 0;
 }
