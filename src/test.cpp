@@ -116,5 +116,9 @@ int main(int argc, const char **argv) {
     casadi::MX test_variable;
     std::cout << "the size of test_variable is " << test_variable.size().first << " x " << test_variable.size().second << "\n";
 
+    test_variable = opti.parameter();
+    std::cout << "the size of test_variable is " << test_variable.size().first << " x " << test_variable.size().second << "\n";
+    opti.set_value(test_variable, 43);
+    std::cout << "the value of test_variable is " << opti.debug().value(test_variable) << "\n";
     return 0;
 }

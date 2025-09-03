@@ -3,12 +3,12 @@
 
 
 namespace whole_body_roller {
-    enum end_effector_state_t {
+    enum struct end_effector_state_t {
         IN_CONTACT,
         FLOATING,
     };
 
-    enum end_effector_function_t {
+    enum struct end_effector_function_t {
         MANIPULATION,
         LOCOMOTION,
         IDLE,

@@ -48,6 +48,9 @@ namespace whole_body_roller {
         bool update_joint_states(const Eigen::VectorXd &joint_positions, const Eigen::VectorXd &joint_velocities);
 
 
+        void update_nc();
+
+
         // check the end effectors that are in contact and update nc_ in dec_v
         // then update the dynamics constraint with new M for dec_v.qdd and new contact jacobians for each contact in the constraint 
         // the order of contact jacobians is the same as the order that the end effectors have been added in

@@ -13,7 +13,6 @@ namespace whole_body_roller {
         // this->dec_v = dv;
         this->dynamics = dyn;
         this->dec_v = this->dynamics->get_dec_v();
-        std::cout << "adding dynamics constraint\n";
         this->add_constraint(this->dynamics->dynamics_constraint, this->dynamics);
     }
 
@@ -26,6 +25,7 @@ namespace whole_body_roller {
             // we can add the constraint handler to the constraint handler list
             // so that we can update the constraints before solving the qp
             this->constraint_handlers.push_back(constraint_handler);
+            std::cout << "adding constraint with " << constraint->num_constraints_ << " constraints\n";
             this->consolidate_constraints(); // update the number of equality and inequality constraints
             this->update_optim(); // update the qp with the new number of constraints
             return true;
@@ -34,6 +34,8 @@ namespace whole_body_roller {
     }
     // this function consolidates all the constraints, coutns the number of equality and inequality constraints,
     void Roller::consolidate_constraints() {
+        this->num_eq_constraints = 0;
+        this->num_ineq_constraints = 0;
         // TODO implement this function to consolidate all the constraints
         for (auto& constraint_handler : this->constraint_handlers) {
             // if (!constraint_handler->constraint_is_active()) {
@@ -57,6 +59,8 @@ namespace whole_body_roller {
         // int num_eq_constraints = 0;
         // int num_ineq_constraints = 0;
         int nvars = this->dec_v->get_ndv(); // number of variables in the qp
+        std::cout << "number of decision variables: " << nvars << "\n";
+        std::cout << "size of qdd " << this->dec_v->nv_  << ", and the size of tau is " << this->dec_v->ntau_ << ", and the size of the contacts is " << this->dec_v->nc_ << "\n";
         // Create equality the constraint matrix
         Eigen::MatrixXd eq_constraint_matrix(nvars, num_eq_constraints);
         Eigen::VectorXd eq_constraint_bias(num_eq_constraints);
@@ -112,8 +116,13 @@ namespace whole_body_roller {
             std::cout << "shape of eigen mat " << eq_constraint_matrix.rows() << ", " << eq_constraint_matrix.cols() << "\n";
             casadi::DM dm_eqm = casadi_helpers::toDM(eq_constraint_matrix.transpose());
             std::cout << "running set value\n";
-            this->optim->opti.set_value(this->optim->eq_con, dm_eqm);
-            std::cout << "eq constraints exist, added matrix, now adding bias\n";
+            // this->optim->opti.set_value(this->optim->test_param, casadi_helpers::toDMcol(Eigen::VectorXd::Ones(1))); // this works or does it?
+            // std::cout << "1d parameter value set\n";
+            std::cout << "shape of param " << this->optim->eq_con.size() << std::endl;
+            // std::cout << "the eq matrix is " << eq_constraint_matrix << std::endl;
+            // std::cout << "shape of dm" << dm_eqm.size() << std::endl;
+            this->optim->opti.set_value(this->optim->eq_con, dm_eqm); // this is throwing the error for whatever reason
+            // std::cout << "eq constraints exist, added matrix, now adding bias\n";
             this->optim->opti.set_value(this->optim->eq_bias, casadi_helpers::toDMcol(eq_constraint_bias));
         }
 
@@ -123,36 +132,26 @@ namespace whole_body_roller {
             this->optim->opti.set_value(this->optim->ineq_bias, casadi_helpers::toDMcol(ineq_constraint_bias));
         }
 
-        std::cout << "set casadi params\n";
+        // std::cout << "set casadi params\n";
         auto sol = this->optim->opti.solve();
-        std::cout << "the solution is " << sol.value(this->optim->z) << std::endl;
 
-        return false;
+        casadi::DM sol_z = sol.value(this->optim->z);
+        Eigen::VectorXd sol_z_eigen = casadi_helpers::DM_to_Vector(sol_z);
+        // std::cout << "the solution is " << sol_z_eigen << std::endl;
+        // std::cout << "the size of the solution is "  << sol_z_eigen.size() << "\n";
+        this->joint_torques = std::make_shared<Eigen::VectorXd>(sol_z_eigen.segment(this->dec_v->nv_-1, this->dec_v->ntau_));
+        // std::cout << "the torques are " << *(this->joint_torques) << std::endl;
+
+        return true;
     }
 
     void Roller::update_optim() {
         // DONE implement this function to update the optim object
+        // std::cout << "updating optim with decv " << this->dec_v->nv_ << ", and the size of tau is " << this->dec_v->ntau_ << ", and the size of the contacts is " << this->dec_v->nc_ << "\n";
         this->optim = std::make_shared<casadi_helpers::CaSolver>(
             this->dec_v->get_ndv(), 
             this->num_eq_constraints, 
             this->num_ineq_constraints);
-        // this->optim = casadi::Opti();
-        // this->z = this->optim.variable(this->dec_v->get_ndv()); // decision variables
-        // // DONE create parameters for eq_const_mat and eq_const_bias
-        // if (this->num_eq_constraints > 0) {
-        //     this->eq_con = this->optim.parameter(this->num_eq_constraints, this->dec_v->get_ndv());
-        //     this->eq_bias = this->optim.parameter(this->num_eq_constraints);
-        //     this->optim.subject_to(casadi::MX::mtimes(eq_con, z) == eq_bias); // equality constraints
-        // }
-        // // DONE create parameters for ineq_const_mat and ineq_const_bias
-        // if (this->num_ineq_constraints > 0) {
-        //     this->ineq_con = this->optim.parameter(this->num_ineq_constraints, this->dec_v->get_ndv());
-        //     this->ineq_bias = this->optim.parameter(this->num_ineq_constraints);
-        //     this->optim.subject_to(casadi::MX::mtimes(ineq_con, z) >= ineq_bias); // inequality constraints
-        // }
-        // // TODO set objective and constraints
-        // this->optim.minimize(casadi::MX::dot(z, z)); // objective function: minimize the sum of squares of decision variables
-        // this->optim.solver("ipopt");
     }
 
 

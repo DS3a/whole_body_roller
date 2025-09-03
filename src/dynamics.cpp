@@ -6,6 +6,7 @@ namespace whole_body_roller {
         this->num_end_effectors_ = num_end_effectors;
         this->model_ = model;
         this->data_ = std::make_shared<pinocchio::Data>(*this->model_);
+        std::cout << "Initialized dynamics with model having " << this->model_->nq << " dof and " << this->model_->nv << " velocity variables\n";
 
         this->dec_v = std::make_shared<whole_body_roller::ControlDecisionVariables>(
             this->model_->nv, // number of variables in the second derivative of the joint positions (incl. floating base)
@@ -66,11 +67,12 @@ namespace whole_body_roller {
     }
 
     bool Dynamics::change_end_effector_state(std::string frame_name, end_effector_state_t new_state) {
-        if (this->is_dynamics_ready &&
-            this->model_->existFrame(frame_name) &&
+        if (this->model_->existFrame(frame_name) &&
             this->end_effector_map_.count(frame_name) == 1
             ) {
-            this->end_effectors[this->end_effector_map_[frame_name]].state = new_state;    
+            this->end_effectors[this->end_effector_map_[frame_name]].state = new_state;
+            std::cout << "updating nc after changing end effector state \n";
+            this->update_nc();
             return true;
         }
 
@@ -78,8 +80,7 @@ namespace whole_body_roller {
     }
 
     bool Dynamics::change_end_effector_function(std::string frame_name, end_effector_function_t new_function) {
-        if (this->is_dynamics_ready &&
-            this->model_->existFrame(frame_name) &&
+        if (this->model_->existFrame(frame_name) &&
             this->end_effector_map_.count(frame_name) == 1
             ) {
             this->end_effectors[this->end_effector_map_[frame_name]].fn = new_function;    
@@ -105,6 +106,17 @@ namespace whole_body_roller {
 
         return true;
     }
+
+    void Dynamics::update_nc() {
+        int nc = 0;
+        for (const auto& ee : this->end_effectors) {
+            if (ee.state == whole_body_roller::end_effector_state_t::IN_CONTACT) {
+                nc++;
+            }
+        }
+        std::cout << "the number of contacts are " << nc << "\n";
+        this->dec_v->nc_ = nc;
+    }
         
     bool Dynamics::update_dynamics_constraint() {
         if (!this->is_dynamics_ready) {
@@ -119,10 +131,8 @@ namespace whole_body_roller {
         pinocchio::forwardKinematics(*this->model_, *this->data_, this->joint_positions_, this->joint_velocities_);
         pinocchio::computeJointJacobians(*this->model_, *this->data_, this->joint_positions_);
         // Update the number of contact points in the decision variables
-        this->dec_v->nc_ = 0;
         for (const auto& ee : this->end_effectors) {
             if (ee.state == whole_body_roller::end_effector_state_t::IN_CONTACT) {
-                this->dec_v->nc_++;
                 contact_jacobians.push_back(
                     // We use LOCAL_WORLD_ALIGNED to get the jacobian in the world frame
                     // it basically gives us the jacobian of the end effector in the world frame
