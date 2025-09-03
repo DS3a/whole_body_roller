@@ -46,14 +46,6 @@ namespace casadi_helpers {
             return E;
         }
 
-    //     // Expand sparse pattern
-    //     const double* v = M.ptr();
-    //     const std::vector<int>& col = S.colind();  // size n+1
-    //     const std::vector<int>& row = S.row();     // size nnz
-    //     for (int j = 0; j < n; ++j)
-    //         for (int k = col[j]; k < col[j+1]; ++k)
-    //         E(row[k], j) = v[k];
-
         return E;
     }
 
